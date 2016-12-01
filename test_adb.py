@@ -4,6 +4,7 @@ import time
 from subprocess import call
 import ConfigParser
 import sys
+from PIL import Image
 
 Config = ConfigParser.ConfigParser()
 Config.read("config.ini")
@@ -12,8 +13,8 @@ ENV = sys.argv[1]
 DEVICE = Config.get(ENV, 'device')
 TAP_CONTINUE_LOCATION = Config.get(ENV, 'continue').split(',')
 #get screen
-SCREEN_SHOT = ["adb","-s",DEVICE,"shell","screencap","/sdcard/screen.png"]
-GET_SCREEN = ["adb","-s",DEVICE,"pull","/sdcard/screen.png"]
+SCREEN_SHOT = ["adb","-s",DEVICE,"shell","screencap","/sdcard/%s.png"%(ENV)]
+GET_SCREEN = ["adb","-s",DEVICE,"pull","/sdcard/%s.png"%(ENV)]
 #define TAP
 TAP = ["adb","-s",DEVICE,"shell","input","tap"]
 TAP_CONTINUE = list(TAP)
@@ -27,6 +28,9 @@ HIGHLIGHT_PATH = ".\\%s\\highlight\\"%(ENV)
 def find_image(picture_list, highlight=False):	
 	call(SCREEN_SHOT)
 	call(GET_SCREEN)
+	if ENV == "mobile":
+		img = Image.open("%s.png"%(ENV)).rotate(270)
+		img.save("%s.png"%(ENV))
 	#get location
 	if highlight:
 		picture_path_root = HIGHLIGHT_PATH
@@ -35,22 +39,23 @@ def find_image(picture_list, highlight=False):
 	#compare img
 	for picture in picture_list:
 		picture_path = picture_path_root + picture
-		img = cv2.imread('screen.png',0)
+		img = cv2.imread("%s.png"%(ENV),0)
 		template = cv2.imread(picture_path,0)
 		w, h = template.shape[::-1]
 		res = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED)
 		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
 		if max_val > 0.75 :
 			print "found the image: " + picture
-			return [max_loc[0] + w/2, max_loc[1] + h/2]
 			if picture == "capture_boss.png":
+				print "going to kill"
+				global BOSS_KILL
 				BOSS_KILL = True
-			break
+			return [max_loc[0] + w/2, max_loc[1] + h/2]
 		else:
 			print "it's not found: " + picture
 
 def fight():
-	time.sleep(40)
+	time.sleep(20)
 	for i in range(20):
 		location = find_image(['victory.png'])
 		print i
@@ -66,15 +71,15 @@ highlight_list = []
 for i in range(6):
 	highlight_list.append('capture_h%s.png'%(i+1))
 
-for i in range(15):
+while(BOSS_KILL==False):
 	location_highlight = find_image(highlight_list, True)
 	if location_highlight:
 		location = location_highlight
 	else:
 		location = find_image(['capture_boss.png','capture.png'])
 	if location:
-		location_x_list = [str(location[0]), str(location[0] + 10),str(location[0] - 10)]
-		location_y_list = [str(location[1]), str(location[1] + 10),str(location[1] - 10)]
+		location_x_list = [str(location[0]), str(location[0] + 15),str(location[0] - 15)]
+		location_y_list = [str(location[1]), str(location[1] + 15),str(location[1] - 15)]
 		for x in location_x_list:
 			for y in location_y_list:
 				print "going to tap: " + x + y
@@ -87,22 +92,22 @@ for i in range(15):
 		else:
 			print "going to fight"
 			fight()
-			if BOSS_KILL == True:
-				print "BOSS KILLED"
-				time.sleep(5)
-				for i in range(5):
-					location = find_image(['gift.png'])
-					if location:
-						call(["adb","-s",DEVICE,"shell","input","tap",location[0], location[1]])
-						time.sleep(2)
-						call(["adb","-s",DEVICE,"shell","input","tap","800", "200"])
-						time.sleep(2)
-					else:
-						break
-				break
+			print BOSS_KILL
 	else:
-		search_tap = list(TAP)
-		search_tap.extend(["150","450"])
-		call(search_tap)
+		call(["adb","-s",DEVICE,"shell","input","tap","100", "200"])
 		time.sleep(5)
+
+if BOSS_KILL == True:
+	print "BOSS KILLED"
+	time.sleep(10)
+	for i in range(5):
+		location = find_image(['gift.png'])
+		if location:
+			call(["adb","-s",DEVICE,"shell","input","tap",str(location[0]), str(location[1])])
+			time.sleep(2)
+			call(["adb","-s",DEVICE,"shell","input","tap","800", "200"])
+			time.sleep(2)
+		else:
+			break
+
 
