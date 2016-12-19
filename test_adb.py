@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import cv2
 import time
-from subprocess import call
+from subprocess import call, check_output
 import ConfigParser
 import sys
 from PIL import Image
@@ -14,7 +14,9 @@ DEVICE = Config.get(ENV, 'device')
 TAP_CONTINUE_LOCATION = Config.get(ENV, 'continue').split(',')
 #get screen
 SCREEN_SHOT = ["adb","-s",DEVICE,"shell","screencap","/sdcard/%s.png"%(ENV)]
-GET_SCREEN = ["adb","-s",DEVICE,"pull","/sdcard/%s.png"%(ENV)]
+GET_SCREEN = ["adb","-s",DEVICE,"pull","/sdcard/%s.png"%(ENV),"%s.png"%(ENV)]
+# RM_SCREEN = ["adb","-s",DEVICE,"shell","rm","-f","/sdcard/yinyang/*.png"]
+# CHECK = ["adb","-s",DEVICE,"shell","ls","/sdcard/yinyang/"]
 #define TAP
 TAP = ["adb","-s",DEVICE,"shell","input","tap"]
 TAP_CONTINUE = list(TAP)
@@ -26,11 +28,15 @@ COMPARE_PATH = ".\\%s\\compare\\"%(ENV)
 HIGHLIGHT_PATH = ".\\%s\\highlight\\"%(ENV)
 
 def find_image(picture_list, highlight=False):	
+	# call(RM_SCREEN)
 	call(SCREEN_SHOT)
+	# file_name = check_output(CHECK).strip('\r\r\n')
+	# GET_SCREEN = ["adb","-s",DEVICE,"pull","/sdcard/yinyang/%s"%(file_name),"%s.png"%(ENV)]
 	call(GET_SCREEN)
-	if ENV == "mobile":
-		img = Image.open("%s.png"%(ENV)).rotate(270)
-		img.save("%s.png"%(ENV))
+
+	# if ENV == "mobile":
+	# 	img = Image.open("%s.png"%(ENV)).rotate(180)
+	# 	img.save("%s.png"%(ENV))
 	#get location
 	if highlight:
 		picture_path_root = HIGHLIGHT_PATH
@@ -94,7 +100,7 @@ while(BOSS_KILL==False):
 			fight()
 			print BOSS_KILL
 	else:
-		call(["adb","-s",DEVICE,"shell","input","tap","100", "200"])
+		call(["adb","-s",DEVICE,"shell","input","tap","900", "440"])
 		time.sleep(5)
 
 if BOSS_KILL == True:
