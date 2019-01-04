@@ -1,0 +1,216 @@
+Problem
+One wants to develop auto tests using BDD framework SpecFlow
+Pre-condition
+Visual Studio is installed.
+A solution with a Class Library test project is set up in Visual Studio.
+Supported browsers: Firefox (46 or older) and Chrome (any version, latest is 52 at the moment of writing the guide).
+The recipe is applicable to all versions of MS Visual Studio 2012 - 2015, all editions.
+The recipe will use MS Visual Studio 2015 and Visual C#.
+Solution
+Installing SpecFlow
+SpecFlow runs over other testing frameworks. So, before installing the SpecFlow extension on your IDE, you'll need to reference other unit testing framework.
+You may do this after getting familiar with these articles:
+How to create a first test - NUnit
+How to create first test - MS Unit Testing Framework (MSTest, MSUnit)
+After that, you can install SpecFlow.
+1. Go to Tools -> Extensions and Updates
+2. Open the Online tab and type SpecFlow in the search pane.
+3. Click Download on the first result and then click Install.
+
+4. Restart Visual Studio, when prompted.
+5. Add SpecFlow NuGet package for your solution. Right-click on Solution, click Manage NuGet Packages for Solution
+6. Open the Online tab, type SpecFlow to search pane.
+7. Click Install on the found result.
+8. Select your test project for SpecFlow installation and click OK.
+
+Writing features
+Let's automate the below test scenario, having "The Hitchhiker's Guide to the Galaxy" and “iphone” as input values for the $(product) variable in the scenario:
+Test steps
+Expected results
+1. Navigate to www.amazon.com
+ 
+2. Type $(product) in the Search text input at the top of the page
+ 
+3. Click the Search button to the right of the Search text input
+Browser navigates to page with search results
+4. Remember the product title text on the Product Description page.
+ 
+5. Click on the first search result's title link.
+Browser navigates to Product Description page
+6. Click on the Add to Cart button on the right side of the screen
+Browser navigates to the Cart Subtotal page
+7. Click on the Cart button at the upper-right corner of the screen
+Browser navigates to the Shopping Cart page
+8. Compare the text of the title link of the first item on the Shopping Cart page to the one retrieved from step 5.
+The title of the item on the Shopping Cart page equals the one on the Product Description page.
+The already implemented framework and code of the above test feature are available in Git. Open the TestFramework.SpecFlowTests solution. 
+ 
+Brief description of framework implemented
+1) TestFramework.Core - consists of the next parts:
+UI -> Controls - utilities for different types of HTML-controls, e.g. tables, on application's pages.
+UI -> Pages - classes that implement Page Object pattern for application's pages.
+Utilities -> Browser - contains utilities for handling WebDriver.
+Utilities -> Application class that provides utility methods for handling the application at a higher level, than the controls and elements. It isolates tests from implementation of the framework.
+Utilities -> Logger - allows to record actions coming from the tests and framework. You may get familiar with its concept here: How to setup basic reporting (logger and screenshots)? - .NET 
+Utilities -> ScreenshotTaker class - takes screenshots of browser. You may get familiar with its concept here: How to setup basic reporting (logger and screenshots)? - .NET
+Utilities -> ConfigurationReader - stores values parsed from the configuration file (app.config).
+2) TestFramework.SpecFlowTests
+Features - contains Feature files. Features may be imagined as test suites in unit test frameworks.
+Steps - contains classes with actual code, bound to step lines in Feature files.
+app.config - contains configuration values for test runs. For example, browser, WebDriver's timeout values, application URL, etc.
+
+Adding Features
+The tests in BDD are written in a human-manner language, that is called Gherkin language. Files that contain such tests are called Features in SpecFlow. Let's create a feature file with a test.
+1. In your Test Project, create a Features folder.
+2. Add SpecFlow Feature file to the test solution: right-click on the Features folder, click Add -> New Item
+3. Here you can see the file types that have been added during SpecFlow installation. Choose SpecFlow Feature File, name it and click Add.
+
+4. Copy below code to the created feature file:
+SomeFeature.feature
+Feature: Amazon Cart
+ 
+Scenario Outline: Product Gets To Cart
+    Given I open application
+    When I search '<Product>'
+    And I remember Search Results titles
+    And I click Search Result at index 0
+    And I click Add To Cart button
+    And I open Cart
+    Then I see Search Result of index 0 in Cart Items at index 0
+ 
+Examples: 
+| Product                              |
+| The Hitchhiker's guide to the galaxy |
+| iphone                               |
+Let's review the keywords that SpecFlow uses:
+Feature - feature name that is tested. It can also be considered as the test class name.
+Scenario - can also be considered as test name. Scenario Outline is used for Data-Driven testing.
+Given - a pre-condition action for the test.
+When - actual actions of the test following that keyword.
+Then - actual action step. It is usually used as an assertion step.
+And - copies the last used keyword, e.g. in this test it's the same as When. It's named so to make the scenario more human-readable.
+Also, here you can see a data-driven approach applied. Under the Examples keyword there is a table with one column named Product. The scenario will run as many times, as there are rows in this table under the column name with the specified values.
+The BDD scenario is set up and even a person with quite a junior technical knowledge can understand what this test should do.
+Adding Definitions
+To convert this Gherkin scenario into actual framework actions in a browser, you need to make a Definition class. It contains bindings to transform a human-readable scenario into the methods of interaction with the browser.
+1. Add the Definitions folder to the test project: right-click on it and click Add -> New Item. Choose SpecFlow Step Definition, name it, and click Add.
+
+2. SpecFlow will produce a template Definition class.
+The sample test projectcontains several Definition classes for the scenario. The most essential ones are represented below: 
+BaseSteps.cs 
+ Expand source
+SpecFlow supports the methods that will run before or after:
+Scenario - methods decorated with attribute [BeforeScenario], [AfterScenario]
+Feature - methods decorated with attribute [BeforeFeature], [AfterFeature]
+And also some others.
+You may visit links in Limitations, or SpecFlow Wiki.
+HomePageSteps.cs 
+ Expand source
+ 
+Ok, let's talk about what we see here:
+The class with [Binding] means that it contains conversion bindings between methods and scenario steps in features.
+Methods marked with attributes [Given], [When], [Then]. Code in this methods will be executed when the SpecFlow interpreter hits the line in the test with the specified a) keyword b) text that follows that keyword. Example: SpecFlow walks through the scenario, detects the line 'Given I navigate to application'. Then it goes to the Definition class and finds a method marked with the Given keyword and string value for it is “I navigate to application”. The line in the scenario and definition for it match -> method is selected for execution.
+You may also make a step parameterized. Here method SearchProduct is parameterized with a string parameter. Once the actual scenario hits step "When I search 'The Hitchhiker's Guide to the Galaxy'", this method will be executed with the string parameter of "The Hitchhiker's Guide to the Galaxy".
+Running features
+1. Rebuild your Solution. You can see the list of features with Scenarios displayed in Test Explorer.
+2. Select the features and run them.
+Further reading
+SpecFlow is a powerful BDD framework that has many features. You can start from below links if you want to learn more:
+http://www.specflow.org/
+https://github.com/techtalk/SpecFlow/wiki - section Pages
+
+
+
+
+Element ID
+The ID is an identifier for the element that is typically assigned by the developer of the code. The ID should be unique on the page, but browsers do allow violation of this rule, so it is occasionally not unique. This is usually the best locator where there is only one of “that thing” on the page.
+Field Name
+Each input field in a form has a name. In general, field names are unique to the form, but not always. A Field Name locator for username and password fields on a login page usually work great. But each radio button in a related group will have the same name (and different values) – so a different locator must be used to click on a specific button in the group. In the above example, the input field could be easily located using either the id or the field name.
+CSS Selector
+CSS Selectors are similar XPaths – they are flexible and powerful. Unlike XPath, they are not based on the structure of the DOM and don’t navigate the DOM in that manner. However, they can do some things easily that is somewhat hard to do with XPath. If your application uses a lot of CSS, then your developers are likely very familiar with the concept and can help you devise CSS Selectors to find any element on the page.
+XPath
+XPath is a language for traversing the structure of the DOM (document object model) of the web page. XPath locators are very powerful and flexible. Any element on the page can be located via one or more XPaths and most other locators can be expressed as an XPath. Excepting CSS Selectors, no other locators share this feature. A well-written XPath can be very robust, but a poor XPath can be fragile – meaning that it may break when the application changes. Web pages, and the underlying DOM are structured hierarchically. XPath allows you to navigate that structure.
+XPath AXES 
+As location path defines the location of a node using absolute or relative path, axes are used to indentify elements by their relationship like parent, child, sibling etc. Axes are named so because they refers to axis on which elements are lying relative to an element. Following is the list of various Axis values.
+Text
+The text locator looks for elements with that contain the supplied text. It is handy for finding links and buttons on the page that have visible text (but not an image that contains the text). This locator is custom to Load Tester and is not available in Selenium/Webdriver.
+Under the covers, it is implemented with an XPath locator that looks at these items (in this order):
+Button labels
+Input values (e.g. text fields, etc)
+Link text
+Labels
+Elements with a title attribute
+Elements with text
+Link Text
+If there is a visible element with text that exactly matches the provided text, the Link Text locator will find it.
+ 
+Locator Type
+Pros
+Cons
+Text
+This strategy doesn’t rely on the structure of the page and will work even if it changes.
+Easily matches several elements
+Id
+Each id is supposed to be unique so no chance of matching several elements
+Works well only on elements with fixed ids and not generated ones
+Name
+Works well with fixed list of similar elements
+Difficult to use with data-bound lists
+Link
+Will only select anchor elements
+Useful when testing navigation
+You have to know the text of the link before
+DOM
+Javascript allows you to build dynamic locators
+Relies on the structure of the page
+Xpath
+Allows very precise locators
+Relies on browser’s XPath implementation which is not always complete (especially on IE)
+and as such is not recommended for cross-browser testing
+CSS
+Widely used
+Provides a good balance between structure and attributes
+Allows for selection of elements by their surrounding context
+They tend to be more complex and require a steeper learning curve
+ 
+Differences between CSS and XPATH
+XPath is a good query language when the structure matters and/or is stable. You usually specify path, conditions, exact offset... it is also a good query language to retrieve a set of similar objects and because of that, it has an intimate relationship with XQuery. Here the document has a stable structure and you must retrieve repeated/similar sections. 
+XPath allows traversal from child to parent.
+
+CSS selectors suits better CSS stylesheets. These do not care about the document structure because this changes a lot. Think of one CSS stylesheet applied to all the HTML pages of a website. The content and structure of every page is different. Here CSS selectors are better because of that changing structure. You will notice that access is more tag based. Most CSS syntax specify a set of elements, attributes, id, classes... and not so much their structure. Here you must locate sections that do not have a clear location within a document structure but are marked with certain attributes.
+CSS selectors have features specific to HTML.
+Best practices for creating a good locator
+Priority of anchor points that locate element:
+ID
+Name
+ClassName
+Any other unique attribute
+TagName
+Text
+Type
+Notes
+ID
+For each and every element is always unique so easy to access for us and fast for web driver.Mostly we should prefer Id as first priority to find element.
+Name
+Many time it happens that multiple name is there so need to take care for this if same name attribute is multiple times there.
+Select first element with the specified @name attribute.
+ClassName
+"By ClassName" is rare way to find element because most of website using same class name for multiple items to apply css. But sure you can use it for unique class names.
+Any other unique attribute
+It's reliably way to find element by unique attribute, but you have to be sure, that it's unique.
+TagName
+If your site or page has group elements like dropdown , checkboxes then you can use attribute " By TagName " to find element.
+Text
+The text locator looks for elements with that contain the supplied text. It is handy for finding links and buttons on the page that have visible text.
+ 
+Good locator has to consist of no more than 3 DOM nodes.
+Example: 
+
+Example of awful xpath locator:
+//*[@id='_content_epam_en_careers_jcr_content_content_container_target']/div/div/div/div/div/div[1]/div/div
+Good xpath locator for the same element:
+//div[@class = 'button-player']
+or CSS locator:
+.button-player
+Also we can use AXES for locating this element using its child:
+//a[@id='popup-button']/parent::div
